@@ -5,7 +5,6 @@ import { canvas, ctx, video } from "./html/html-elements";
 import { playerMovement } from "./characters/player-movement";
 import Bullet from "./weapons/bullet";
 import Enemy from "./characters/enemy";
-import generateRandomNumber from "./utils/random";
 
 canvas.width = DIMENSIONS.CANVAS__WIDHT;
 canvas.height = DIMENSIONS.CANVAS__HEIGHT;
@@ -32,17 +31,31 @@ setInterval(() => {
     addBullet();
 }, 200);
 
-const astroids: string[] = [];
-for (let i = 0; i < 20; i++) {
-    astroids[i] = `./images/astroids/asteroid${i % 4}.png`;
+const enemiesShip: string[] = [];
+for (let i = 0; i < 5; i++) {
+    enemiesShip[i] = `./images/enemies/enemy6.gif`;
 }
 
-const enemies: Enemy[] = [];
-for (let i = 0; i < astroids.length; i++) {
-    const randomYpos = generateRandomNumber(-200, 0);
-    const randomXpos = generateRandomNumber(0, canvas.width - 100);
-    const enemy = new Enemy(astroids[i], randomXpos, randomYpos + i * 100, 100, 100);
-    enemies.push(enemy);
+const enemies: Enemy[][] = [];
+const numRows = 3;
+const numCols = 5;
+const gap = 20;
+const enemyWidth = 50;
+const enemyHeight = 50;
+
+// Calculate the starting position for the grid
+const startX = (DIMENSIONS.CANVAS__WIDHT - (numCols * enemyWidth + (numCols - 1) * gap)) / 2;
+const startY = 50; // Starting Y position
+
+for (let row = 0; row < numRows; row++) {
+    const enemyRow: Enemy[] = [];
+    for (let col = 0; col < numCols; col++) {
+        const xPos = startX + col * (enemyWidth + gap);
+        const yPos = startY + row * (enemyHeight + gap);
+        const enemy = new Enemy(enemiesShip[col % enemiesShip.length], xPos, yPos, enemyWidth, enemyHeight);
+        enemyRow.push(enemy);
+    }
+    enemies.push(enemyRow);
 }
 
 function drawFrames() {
@@ -61,15 +74,12 @@ function drawFrames() {
         }
     });
 
-    // Enemy
-    enemies.forEach((enemy) => {
-        if (enemy.ypose > canvas.height) {
-            const randomYpos = generateRandomNumber(-200, 0);
-            const randomXpos = generateRandomNumber(0, canvas.width - 100);
-            enemy.ypose = randomYpos;
-            enemy.xpose = randomXpos;
-        }
-        enemy.updatePosition();
+    // Update and draw enemies
+    enemies.forEach((enemyRow) => {
+        enemyRow.forEach((enemy) => {
+            enemy.updatePosition();
+            enemy.draw();
+        });
     });
 
     requestAnimationFrame(drawFrames);

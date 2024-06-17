@@ -1,21 +1,19 @@
+import { DIMENSIONS } from "../constants/constants";
 import { ctx } from "../html/html-elements";
-import { DIMENSIONS, SHIP__HEIGHT, SHIP__WIDTH } from "../constants/constants";
 
 export interface IEnemy {
-    img: string;
+    img: HTMLImageElement;
     xpose: number;
     ypose: number;
     width: number;
     height: number;
-    dx: number;
 
-    draw: (img: string) => void;
-
-    updatePosition: () => void;
+    draw: () => void;
+    updatePosition: (dx: number, dy: number) => void;
 }
 
 export default class Enemy implements IEnemy {
-    img: string;
+    img: HTMLImageElement;
     xpose: number;
     ypose: number;
     width: number;
@@ -23,26 +21,39 @@ export default class Enemy implements IEnemy {
     dx: number;
     dy: number;
 
-    constructor(img: string, xpose: number, ypose: number, width: number, height: number) {
-        this.img = img;
+    constructor(imgSrc: string, xpose: number, ypose: number, width: number, height: number) {
+        this.img = new Image();
+        this.img.src = imgSrc;
         this.width = width;
         this.height = height;
         this.xpose = xpose;
         this.ypose = ypose;
-        this.dx = 0;
+        this.dx = 5;
         this.dy = 5;
     }
 
     draw(): void {
-        const img = new Image();
-        img.src = this.img;
-
-        ctx.drawImage(img, this.xpose, this.ypose, this.width, this.height);
+        ctx.drawImage(this.img, this.xpose, this.ypose, this.width, this.height);
     }
 
     updatePosition(): void {
+        this.xpose += this.dx;
         this.ypose += this.dy;
 
-        this.draw();
+        if (this.xpose < 0) {
+            this.dx *= -1;
+        }
+
+        if (this.xpose > DIMENSIONS.CANVAS__WIDHT - 200) {
+            this.dx *= -1;
+        }
+
+        if (this.ypose < 0) {
+            this.dy *= -1;
+        }
+
+        if (this.ypose > DIMENSIONS.CANVAS__HEIGHT - 200) {
+            this.dy *= -1;
+        }
     }
 }

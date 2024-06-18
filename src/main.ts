@@ -8,6 +8,8 @@ import Bullet from "./weapons/bullet";
 import { detectCollision } from "./helper";
 import { enemyGrid } from "./components/enemygrid";
 import Particle from "./characters/explosion";
+import generateRandomNumber from "./utils/random";
+import EnemyBullet from "./weapons/enemy-bullet";
 
 // Canvas dimensions
 canvas.width = DIMENSIONS.CANVAS__WIDHT;
@@ -51,7 +53,11 @@ const enemies = enemyGrid();
 // particles of explosion
 const particles: Particle[] = [];
 
+export const enemyBullets: EnemyBullet[] = [];
+
 let animationFrameId: number;
+
+let randEnemyBullet = generateRandomNumber(0, enemies.length - 1);
 
 function drawFrames() {
     frameCount++;
@@ -120,6 +126,22 @@ function drawFrames() {
         enemy.draw();
     });
 
+    if (frameCount % 100 == 0 && enemies.length > 0) {
+        randEnemyBullet = generateRandomNumber(0, enemies.length - 1);
+        enemyBullets.push(
+            new EnemyBullet(
+                "./images/enemies/bullet/space_mine.png",
+                enemies[randEnemyBullet].xpose + enemies[randEnemyBullet].width / 2,
+                enemies[randEnemyBullet].ypose + enemies[randEnemyBullet].height,
+                30,
+                30
+            )
+        );
+    }
+    enemyBullets.forEach((b) => {
+        b.updatePosition();
+    });
+
     // Request next frame
     animationFrameId = requestAnimationFrame(drawFrames);
 }
@@ -130,11 +152,3 @@ video.addEventListener("canplay", () => {
         drawFrames();
     }
 });
-
-// Attempt to play the video
-video.play().catch((error) => {
-    console.error("Video play was interrupted:", error);
-});
-
-// Optionally, focus the canvas to ensure it is treated as active media
-canvas.focus();

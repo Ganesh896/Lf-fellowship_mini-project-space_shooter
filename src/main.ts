@@ -8,7 +8,6 @@ import Bullet from "./weapons/bullet";
 import { detectCollision } from "./helper";
 import { enemyGrid } from "./components/enemygrid";
 import Particle from "./characters/explosion";
-import generateRandomNumber from "./utils/random";
 
 // Canvas dimensions
 canvas.width = DIMENSIONS.CANVAS__WIDHT;
@@ -42,22 +41,24 @@ const addBullet = function () {
 };
 
 // Fire bullets at intervals
-setInterval(() => {
+let bulletIntervalId = setInterval(() => {
     addBullet();
 }, 200);
 
 let frameCount = 0;
 const enemies = enemyGrid();
 
-//particles of explosion
+// particles of explosion
 const particles: Particle[] = [];
+
+let animationFrameId: number;
 
 function drawFrames() {
     frameCount++;
     // Draw background video
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // adding particles
+    // Adding particles
     particles.forEach((particle, index) => {
         if (particle.opacity <= 0) {
             particles.splice(index, 1);
@@ -87,6 +88,11 @@ function drawFrames() {
     for (let i = 0; i < bullets.length; i++) {
         for (let j = 0; j < enemies.length; j++) {
             if (detectCollision(bullets[i], enemies[j])) {
+                if (enemies[j].life > 0) {
+                    enemies[j].life--;
+                    enemies[j].showLifeBar = true; // Show life bar
+                    enemies[j].lifeBarTimer = 120; // Set timer for 2 seconds (assuming 60 FPS)
+                }
                 if (enemies[j].life <= 0) {
                     for (let k = 0; k < 15; k++) {
                         const vx = (Math.random() - 0.5) * 2;
@@ -94,19 +100,17 @@ function drawFrames() {
                         const r = Math.random() * 5;
                         particles.push(new Particle(enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, vx, vy, r, "#cc0118"));
                     }
-                } else {
-                    enemies[j].life--;
                 }
                 bullets.splice(i, 1);
                 break;
             }
         }
+    }
 
-        // cheking if enemy life is over and remove from enemies array
-        for (let j = 0; j < enemies.length; j++) {
-            if (enemies[j].life <= 0) {
-                enemies.splice(j, 1);
-            }
+    // Checking if enemy life is over and remove from enemies array
+    for (let j = 0; j < enemies.length; j++) {
+        if (enemies[j].life <= 0) {
+            enemies.splice(j, 1);
         }
     }
 
@@ -116,12 +120,15 @@ function drawFrames() {
         enemy.draw();
     });
 
-    requestAnimationFrame(drawFrames);
+    // Request next frame
+    animationFrameId = requestAnimationFrame(drawFrames);
 }
 
 // Start drawing the video once it is loaded
 video.addEventListener("canplay", () => {
-    drawFrames();
+    if (!animationFrameId) {
+        drawFrames();
+    }
 });
 
 // Attempt to play the video

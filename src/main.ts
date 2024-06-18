@@ -1,14 +1,27 @@
+// Imports
 import SpaceShip from "./characters/player";
-import { DIMENSIONS } from "./constants/constants";
+import { DIMENSIONS, BULLET__WIDTH, BULLET__HEIGHT } from "./constants/constants";
 import { SHIP__WIDTH, SHIP__HEIGHT } from "./constants/constants";
 import { canvas, ctx, video } from "./html/html-elements";
-import { playerMovement } from "./characters/player-movement";
+import { playerMovement } from "./components/player-movement";
 import Bullet from "./weapons/bullet";
-import Enemy from "./characters/enemy";
+import { detectCollision } from "./helper";
+import { enemyGrid } from "./components/enemygrid";
+import Particle from "./characters/explosion";
+import generateRandomNumber from "./utils/random";
 
+// Canvas dimensions
 canvas.width = DIMENSIONS.CANVAS__WIDHT;
 canvas.height = DIMENSIONS.CANVAS__HEIGHT;
 
+// Draw text
+function drawText() {
+    ctx.font = "60px Arial";
+    ctx.fillStyle = "red";
+    ctx.fillText(`Wave ${1}/${3}`, canvas.width / 2 - 60, canvas.height / 2);
+}
+
+// Enemy ships
 const spaceshipImages = [
     "./images/spaceship/blueship/blueship1.png",
     "./images/spaceship/blueship/blueship2.png",
@@ -17,50 +30,41 @@ const spaceshipImages = [
     "./images/spaceship/blueship/blueship5.png",
 ];
 
+// Bullet
 const bulletImg = "./images/spaceship/bullets/bullet.png";
 
 const bullets: Bullet[] = [];
 const spaceShip = new SpaceShip(spaceshipImages, DIMENSIONS.CANVAS__WIDHT / 2 - SHIP__WIDTH / 2, DIMENSIONS.CANVAS__HEIGHT - 110, SHIP__WIDTH, SHIP__HEIGHT);
 
 const addBullet = function () {
-    const bullet = new Bullet(bulletImg, spaceShip.xpose + SHIP__WIDTH / 2 - 25, spaceShip.ypose - 30, 50, 50);
+    const bullet = new Bullet(bulletImg, spaceShip.xpose + SHIP__WIDTH / 2 - 25, spaceShip.ypose - 30, BULLET__WIDTH, BULLET__HEIGHT);
     bullets.push(bullet);
 };
 
+// Fire bullets at intervals
 setInterval(() => {
     addBullet();
 }, 200);
 
-const enemiesShip: string[] = [];
-for (let i = 0; i < 5; i++) {
-    enemiesShip[i] = `./images/enemies/enemy6.gif`;
-}
+let frameCount = 0;
+const enemies = enemyGrid();
 
-const enemies: Enemy[][] = [];
-const numRows = 3;
-const numCols = 5;
-const gap = 20;
-const enemyWidth = 50;
-const enemyHeight = 50;
-
-// Calculate the starting position for the grid
-const startX = (DIMENSIONS.CANVAS__WIDHT - (numCols * enemyWidth + (numCols - 1) * gap)) / 2;
-const startY = 50; // Starting Y position
-
-for (let row = 0; row < numRows; row++) {
-    const enemyRow: Enemy[] = [];
-    for (let col = 0; col < numCols; col++) {
-        const xPos = startX + col * (enemyWidth + gap);
-        const yPos = startY + row * (enemyHeight + gap);
-        const enemy = new Enemy(enemiesShip[col % enemiesShip.length], xPos, yPos, enemyWidth, enemyHeight);
-        enemyRow.push(enemy);
-    }
-    enemies.push(enemyRow);
-}
+//particles of explosion
+const particles: Particle[] = [];
 
 function drawFrames() {
-    // draw background video
+    frameCount++;
+    // Draw background video
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // adding particles
+    particles.forEach((particle, index) => {
+        if (particle.opacity <= 0) {
+            particles.splice(index, 1);
+        } else {
+            particle.updatePosition();
+        }
+    });
 
     // Ship movement
     spaceShip.playerMovement(playerMovement.moveRight, playerMovement.moveLeft, playerMovement.moveUp, playerMovement.moveDown);
@@ -74,12 +78,42 @@ function drawFrames() {
         }
     });
 
+    // Show text for first 100 frames
+    if (frameCount < 100) {
+        drawText();
+    }
+
+    // Detect collision with bullet and enemy
+    for (let i = 0; i < bullets.length; i++) {
+        for (let j = 0; j < enemies.length; j++) {
+            if (detectCollision(bullets[i], enemies[j])) {
+                if (enemies[j].life <= 0) {
+                    for (let k = 0; k < 15; k++) {
+                        const vx = (Math.random() - 0.5) * 2;
+                        const vy = (Math.random() - 0.5) * 2;
+                        const r = Math.random() * 5;
+                        particles.push(new Particle(enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, vx, vy, r, "#cc0118"));
+                    }
+                } else {
+                    enemies[j].life--;
+                }
+                bullets.splice(i, 1);
+                break;
+            }
+        }
+
+        // cheking if enemy life is over and remove from enemies array
+        for (let j = 0; j < enemies.length; j++) {
+            if (enemies[j].life <= 0) {
+                enemies.splice(j, 1);
+            }
+        }
+    }
+
     // Update and draw enemies
-    enemies.forEach((enemyRow) => {
-        enemyRow.forEach((enemy) => {
-            enemy.updatePosition();
-            enemy.draw();
-        });
+    enemies.forEach((enemy) => {
+        enemy.updatePosition();
+        enemy.draw();
     });
 
     requestAnimationFrame(drawFrames);
@@ -90,4 +124,10 @@ video.addEventListener("canplay", () => {
     drawFrames();
 });
 
-video.play();
+// Attempt to play the video
+video.play().catch((error) => {
+    console.error("Video play was interrupted:", error);
+});
+
+// Optionally, focus the canvas to ensure it is treated as active media
+canvas.focus();

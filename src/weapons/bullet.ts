@@ -1,5 +1,4 @@
 import { ctx } from "../html/html-elements";
-import { DIMENSIONS, SHIP__HEIGHT, SHIP__WIDTH } from "../constants/constants";
 
 export interface IBullet {
     img: string;

@@ -1,4 +1,4 @@
-import { DIMENSIONS, SHIP__HEIGHT, SHIP__WIDTH } from "../constants/constants";
+import { DIMENSIONS, SHIP__WIDTH } from "../constants/constants";
 import { ctx } from "../html/html-elements";
 
 export interface ISpaceShip {

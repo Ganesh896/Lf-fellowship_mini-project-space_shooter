@@ -41,7 +41,7 @@ const addBullet = function () {
 };
 
 // Fire bullets at intervals
-let bulletIntervalId = setInterval(() => {
+setInterval(() => {
     addBullet();
 }, 200);
 

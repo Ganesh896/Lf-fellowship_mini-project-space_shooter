@@ -6,17 +6,18 @@ import { canvas, ctx, video } from "./html/html-elements";
 import { playerMovement } from "./components/player-movement";
 import Bullet from "./weapons/bullet";
 import { isEnemyCollide, isShipCollide } from "./helper";
-import { enemyGrid } from "./components/enemygrid";
 import Particle from "./characters/explosion";
 import generateRandomNumber from "./utils/random";
 import EnemyBullet from "./weapons/enemy-bullet";
-import { drawCurrentScore, gameOver } from "./components/texts";
+import { drawCurrentScore, drawPauseText, gameOver } from "./components/texts";
+import { LevelManager } from "./levels/levelManager";
+import Enemy from "./characters/enemy";
 
 // Canvas dimensions
 canvas.width = DIMENSIONS.CANVAS__WIDHT;
 canvas.height = DIMENSIONS.CANVAS__HEIGHT;
 
-// score
+// Score
 export let currentScore = 0;
 export let highScore = localStorage.getItem("highscore") || 0;
 
@@ -33,6 +34,10 @@ function drawGameOver() {
     ctx.fillStyle = "red";
     ctx.fillText("GAME OVER", canvas.width / 2 - 200, canvas.height / 2);
 }
+
+// Level Manager
+const levelManager = new LevelManager();
+let currentLevel = levelManager.getCurrentLevel();
 
 // Enemy ships
 let spaceshipImages = [
@@ -52,55 +57,68 @@ const bulletImg = "/images/spaceship/bullets/bullet.png";
 const bullets: Bullet[] = [];
 const spaceShip = new SpaceShip(spaceshipImages, explosionImages, DIMENSIONS.CANVAS__WIDHT / 2 - SHIP__WIDTH / 2, DIMENSIONS.CANVAS__HEIGHT - 110, SHIP__WIDTH, SHIP__HEIGHT, 3);
 
-const gunshotAudio = new Audio("/audio/gun-shoot.wav"); // Add the audio object
+const gunshotAudio = new Audio("/audio/gun-shoot.wav");
+gunshotAudio.volume = 0.3;
 
 const addBullet = function () {
     const bullet = new Bullet(bulletImg, spaceShip.xpose + SHIP__WIDTH / 2 - 25, spaceShip.ypose - 30, BULLET__WIDTH, BULLET__HEIGHT);
     bullets.push(bullet);
-    gunshotAudio.play(); // Play the gunshot sound
+    gunshotAudio.play();
 };
 
 // Fire bullets at intervals
-const bulletInterval = setInterval(() => {
-    addBullet();
-}, 200);
+let bulletInterval: any;
+
+const startBulletInterval = () => {
+    bulletInterval = setInterval(() => {
+        addBullet();
+    }, 200);
+};
+
+const stopBulletInterval = () => {
+    clearInterval(bulletInterval);
+};
 
 let frameCount = 0;
-const enemies = enemyGrid();
+let enemies: Enemy[] = currentLevel.generateEnemies(); // Initialize enemies from level config
 
-// particles of explosion
+// Particles of explosion
 const particles: Particle[] = [];
 
-// enemy bullets
+// Enemy bullets
 export const enemyBullets: EnemyBullet[] = [];
 
 let animationFrameId: number;
-let gameOverFlag = false; // Add a flag to indicate when the game is over
+let gameOverFlag = false;
+let isPaused = false; // Add a flag to indicate if the game is paused
 
 // Add background music
 const background = new Audio();
 background.src = "/audio/background.mp3";
-background.loop = true; // Loop the background music
+background.loop = true;
+background.volume = 0.2;
 background.currentTime = 0;
 
+// Function to draw frames
 function drawFrames() {
     if (gameOverFlag) {
         drawGameOver();
         return;
     }
 
+    if (isPaused) {
+        return;
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     frameCount++;
 
-    // Ensure the background music is playing
     if (background.paused) {
         background.play();
     }
 
-    // Draw background video
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Adding explosion particles
     particles.forEach((particle, index) => {
         if (particle.opacity <= 0) {
             particles.splice(index, 1);
@@ -109,35 +127,29 @@ function drawFrames() {
         }
     });
 
-    // Player Ship movement
     spaceShip.playerMovement(playerMovement.moveRight, playerMovement.moveLeft, playerMovement.moveUp, playerMovement.moveDown);
     spaceShip.draw();
 
-    // remove player Bullet
     bullets.forEach((b, index) => {
         b.updatePosition();
         if (b.ypose < 0) {
-            bullets.splice(index, 1); // Remove bullet if it moves off the canvas
+            bullets.splice(index, 1);
         }
     });
 
-    // Show WAVE text for first 100 frames
     if (frameCount < 100) {
         drawText();
     }
 
-    // Detect collision with player bullet and enemy
     for (let i = 0; i < bullets.length; i++) {
         for (let j = 0; j < enemies.length; j++) {
             if (isEnemyCollide(bullets[i], enemies[j])) {
-                // showing enemy life bar on hit by bullet
                 if (enemies[j].life > 0) {
                     enemies[j].life--;
-                    enemies[j].showLifeBar = true; // Show life bar
-                    enemies[j].lifeBarTimer = 120; // Set timer for 2 seconds (assuming 60 FPS)
+                    enemies[j].showLifeBar = true;
+                    enemies[j].lifeBarTimer = 120;
                 }
 
-                // show particle explosion when enemy life ended
                 if (enemies[j].life <= 0) {
                     for (let k = 0; k < 15; k++) {
                         const vx = (Math.random() - 0.5) * 2;
@@ -146,14 +158,12 @@ function drawFrames() {
                         particles.push(new Particle(enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, vx, vy, r, "#cc0118"));
                     }
                 }
-                // remove bullet that hits the enemy
                 bullets.splice(i, 1);
                 break;
             }
         }
     }
 
-    // Checking if enemy life is over and remove from enemies array
     for (let j = 0; j < enemies.length; j++) {
         if (enemies[j].life <= 0) {
             enemies.splice(j, 1);
@@ -161,14 +171,18 @@ function drawFrames() {
         }
     }
 
-    // Update and draw enemies
     enemies.forEach((enemy) => {
-        enemy.updatePosition();
+        enemy.updatePosition(frameCount);
         enemy.draw();
     });
 
-    // creating bullet for random enemy at every 100 frames
-    if (frameCount % 100 == 0 && enemies.length > 0) {
+    if (enemies.length === 0) {
+        levelManager.goToNextLevel();
+        currentLevel = levelManager.getCurrentLevel();
+        enemies = currentLevel.generateEnemies();
+    }
+
+    if (frameCount % 100 === 0 && enemies.length > 0) {
         const randEnemyBullet = generateRandomNumber(0, enemies.length - 1);
         enemyBullets.push(
             new EnemyBullet(
@@ -181,7 +195,6 @@ function drawFrames() {
         );
     }
 
-    // enemy shooting bullet
     enemyBullets.forEach((b) => {
         b.shoot();
     });
@@ -189,14 +202,13 @@ function drawFrames() {
     if (spaceShip.life <= 0) {
         gameOver();
         gunshotAudio.pause();
-        gunshotAudio.currentTime = 0; // Reset the audio to the start
+        gunshotAudio.currentTime = 0;
         background.pause();
-        clearInterval(bulletInterval); // Stop firing bullets
-        gameOverFlag = true; // Set game over flag
+        stopBulletInterval();
+        gameOverFlag = true;
         return;
     }
 
-    // enemy bullet and player ship collision
     enemyBullets.forEach((bullet, i) => {
         if (isShipCollide(bullet, spaceShip)) {
             if (spaceShip.life > 0) {
@@ -208,13 +220,36 @@ function drawFrames() {
 
     drawCurrentScore();
 
-    // Request next frame
     animationFrameId = requestAnimationFrame(drawFrames);
 }
 
+// Toggle play/pause
+function togglePause() {
+    isPaused = !isPaused;
+    if (!isPaused) {
+        drawPauseText("Play");
+
+        drawFrames();
+        startBulletInterval();
+        background.play();
+    } else {
+        drawPauseText("Pause");
+        stopBulletInterval();
+        background.pause();
+        cancelAnimationFrame(animationFrameId);
+    }
+}
+
+// Add event listeners for play/pause
+window.addEventListener("keypress", function (e) {
+    if (e.key === " ") {
+        togglePause();
+    }
+});
 // Start drawing the video once it is loaded
 video.addEventListener("canplay", () => {
     if (!animationFrameId) {
         drawFrames();
+        startBulletInterval();
     }
 });

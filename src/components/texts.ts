@@ -25,3 +25,13 @@ export function drawCurrentScore() {
     ctx.fillStyle = "red";
     ctx.fillText(`Score: ${currentScore}`, 20, 90);
 }
+
+export function drawPauseText(text: string) {
+    ctx.fillStyle = "white";
+    ctx.font = "60px sans-serif";
+
+    var textString = text,
+        textWidth = ctx.measureText(textString).width;
+
+    ctx.fillText(textString, canvas.width / 2 - textWidth / 2, canvas.height / 2);
+}

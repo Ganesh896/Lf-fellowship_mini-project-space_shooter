@@ -11,7 +11,7 @@ export function enemyGrid() {
         for (let col = 0; col < GRID__COLS; col++) {
             const xPos = startX + col * (ENEMY__WIDTH + GRID__GAP);
             const yPos = startY + row * (ENEMY__HEIGHT + GRID__GAP);
-            const enemy = new Enemy("./images/enemies/enemy6.gif", xPos, yPos, ENEMY__WIDTH, ENEMY__HEIGHT, 5);
+            const enemy = new Enemy("/images/enemies/enemy6.gif", xPos, yPos, ENEMY__WIDTH, ENEMY__HEIGHT, 2);
             enemies.push(enemy);
         }
     }

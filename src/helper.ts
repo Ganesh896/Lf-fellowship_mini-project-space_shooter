@@ -1,7 +1,9 @@
 import Enemy from "./characters/enemy";
+import SpaceShip from "./characters/player";
 import Bullet from "./weapons/bullet";
+import EnemyBullet from "./weapons/enemy-bullet";
 
-export function detectCollision(bullet: Bullet, enemy: Enemy) {
+export function isEnemyCollide(bullet: Bullet, enemy: Enemy) {
     const isColliding =
         bullet.xpose + bullet.width > enemy.xpose &&
         bullet.xpose < enemy.xpose + enemy.width &&
@@ -9,6 +11,14 @@ export function detectCollision(bullet: Bullet, enemy: Enemy) {
         bullet.ypose + bullet.height <= enemy.ypose + enemy.height;
 
     return isColliding;
+}
 
-    // return enemy.ypose + enemy.height >= bullet.ypose;
+export function isShipCollide(bullet: EnemyBullet, spaceship: SpaceShip) {
+    const isColliding =
+        bullet.xpose + bullet.width > spaceship.xpose &&
+        bullet.xpose < spaceship.xpose + spaceship.width &&
+        bullet.ypose + bullet.height >= spaceship.ypose &&
+        bullet.ypose + bullet.height <= spaceship.ypose + spaceship.height;
+
+    return isColliding;
 }

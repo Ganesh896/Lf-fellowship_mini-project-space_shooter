@@ -26,8 +26,11 @@ export default class SpaceShip implements ISpaceShip {
     frameCount: number;
     frameInterval: number;
     frameTimer: number;
+    life: number;
+    maxLife: number;
+    explosionImages: HTMLImageElement[];
 
-    constructor(imgSrcArray: string[], xpose: number, ypose: number, width: number, height: number) {
+    constructor(imgSrcArray: string[], explosionSrcArray: string[], xpose: number, ypose: number, width: number, height: number, life: number) {
         this.width = width;
         this.height = height;
         this.xpose = xpose;
@@ -39,34 +42,56 @@ export default class SpaceShip implements ISpaceShip {
             img.src = src;
             return img;
         });
+        this.explosionImages = explosionSrcArray.map((src) => {
+            const img = new Image();
+            img.src = src;
+            return img;
+        });
         this.currentFrame = 0;
         this.frameCount = imgSrcArray.length;
-        this.frameInterval = 100; // Change the frame every 100ms
+        this.frameInterval = 100;
         this.frameTimer = 0;
+        this.life = life;
+        this.maxLife = life;
     }
 
     draw(): void {
-        const now = performance.now(); //get the current timestamp in millisecond
-        if (now - this.frameTimer > this.frameInterval) {
-            this.currentFrame = (this.currentFrame + 1) % this.frameCount;
-            this.frameTimer = now;
+        const now = performance.now(); // get the current timestamp in milliseconds
+        if (this.life <= 0) {
+            if (now - this.frameTimer > this.frameInterval) {
+                this.currentFrame = (this.currentFrame + 1) % this.explosionImages.length;
+                this.frameTimer = now;
+            }
+            ctx.drawImage(this.explosionImages[this.currentFrame], this.xpose, this.ypose, this.width + 50, this.height + 50);
+        } else {
+            if (now - this.frameTimer > this.frameInterval) {
+                this.currentFrame = (this.currentFrame + 1) % this.frameCount;
+                this.frameTimer = now;
+            }
+            ctx.drawImage(this.images[this.currentFrame], this.xpose, this.ypose, this.width, this.height);
+
+            // Calculate the life bar width based on the current life relative to max life
+            const lifeBarWidth = (this.life / this.maxLife) * this.width;
+
+            // Draw life bar
+            ctx.fillStyle = "green";
+            ctx.fillRect(20, 20, lifeBarWidth, 10);
+
+            ctx.strokeStyle = "red";
+            ctx.rect(20, 20, this.width, 10);
+            ctx.stroke();
         }
-        ctx.drawImage(this.images[this.currentFrame], this.xpose, this.ypose, this.width, this.height);
     }
 
     playerMovement(moveRight: boolean, moveLeft: boolean, moveUp: boolean, moveDown: boolean): void {
         if (moveRight) {
             this.xpose += this.dx;
-            console.log("right");
         } else if (moveLeft) {
             this.xpose -= this.dx;
-            console.log("left");
         } else if (moveUp) {
             this.ypose -= this.dy;
-            console.log("up");
         } else if (moveDown) {
             this.ypose += this.dy;
-            console.log("down");
         }
 
         // detection on left wall

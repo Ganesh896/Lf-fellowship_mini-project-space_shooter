@@ -10,7 +10,7 @@ export interface IEnemyBullet {
 
     draw: (img: string) => void;
 
-    updatePosition: () => void;
+    shoot: () => void;
 }
 
 export default class EnemyBullet implements IEnemyBullet {
@@ -21,6 +21,7 @@ export default class EnemyBullet implements IEnemyBullet {
     height: number;
     dx: number;
     dy: number;
+    private imageElement: HTMLImageElement;
 
     constructor(img: string, xpose: number, ypose: number, width: number, height: number) {
         this.img = img;
@@ -30,18 +31,18 @@ export default class EnemyBullet implements IEnemyBullet {
         this.ypose = ypose;
         this.dx = 0;
         this.dy = 5;
+
+        // Load image once
+        this.imageElement = new Image();
+        this.imageElement.src = this.img;
     }
 
     draw(): void {
-        const img = new Image();
-        img.src = this.img;
-
-        ctx.drawImage(img, this.xpose, this.ypose, this.width, this.height);
+        ctx.drawImage(this.imageElement, this.xpose, this.ypose, this.width, this.height);
     }
 
-    updatePosition(): void {
+    shoot(): void {
         this.ypose += this.dy;
-
         this.draw();
     }
 }

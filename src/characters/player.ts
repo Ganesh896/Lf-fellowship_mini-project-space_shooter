@@ -30,6 +30,8 @@ export default class SpaceShip implements ISpaceShip {
     maxLife: number;
     explosionImages: HTMLImageElement[];
 
+    skewAngle: number;
+
     constructor(imgSrcArray: string[], explosionSrcArray: string[], xpose: number, ypose: number, width: number, height: number, life: number) {
         this.width = width;
         this.height = height;
@@ -53,10 +55,17 @@ export default class SpaceShip implements ISpaceShip {
         this.frameTimer = 0;
         this.life = life;
         this.maxLife = life;
+
+        this.skewAngle = 0;
     }
 
     draw(): void {
         const now = performance.now(); // get the current timestamp in milliseconds
+        ctx.save(); // Save the current state of the canvas
+        ctx.translate(this.xpose + this.width / 2, this.ypose + this.height / 2); // Move the canvas origin to the center of the spaceship
+        ctx.transform(1, this.skewAngle, 0, 1, 0, 0); // Apply skew transformation
+        ctx.translate(-(this.xpose + this.width / 2), -(this.ypose + this.height / 2)); // Move the canvas origin back
+
         if (this.life <= 0) {
             if (now - this.frameTimer > this.frameInterval) {
                 this.currentFrame = (this.currentFrame + 1) % this.explosionImages.length;
@@ -69,47 +78,49 @@ export default class SpaceShip implements ISpaceShip {
                 this.frameTimer = now;
             }
             ctx.drawImage(this.images[this.currentFrame], this.xpose, this.ypose, this.width, this.height);
-
-            // Calculate the life bar width based on the current life relative to max life
-            const lifeBarWidth = (this.life / this.maxLife) * this.width;
-
-            // Draw life bar
-            ctx.fillStyle = "green";
-            ctx.fillRect(20, 20, lifeBarWidth, 10);
-
-            ctx.strokeStyle = "red";
-            ctx.rect(20, 20, this.width, 10);
-            ctx.stroke();
         }
+
+        ctx.restore(); // Restore the canvas state
+
+        // Draw life bar after restoring the canvas state
+        const lifeBarWidth = (this.life / this.maxLife) * this.width;
+        ctx.fillStyle = "green";
+        ctx.fillRect(20, 20, lifeBarWidth, 10);
+
+        ctx.strokeStyle = "red";
+        ctx.rect(20, 20, this.width, 10);
+        ctx.stroke();
     }
 
     playerMovement(moveRight: boolean, moveLeft: boolean, moveUp: boolean, moveDown: boolean): void {
         if (moveRight) {
             this.xpose += this.dx;
+            this.skewAngle = 0.4; // Skew right
         } else if (moveLeft) {
             this.xpose -= this.dx;
-        } else if (moveUp) {
+            this.skewAngle = -0.4; // Skew left
+        } else {
+            this.skewAngle = 0; // No skew
+        }
+
+        if (moveUp) {
             this.ypose -= this.dy;
         } else if (moveDown) {
             this.ypose += this.dy;
         }
 
-        // detection on left wall
         if (this.xpose < 0) {
             this.xpose = 0;
         }
 
-        // detection on right wall
         if (this.xpose > DIMENSIONS.CANVAS__WIDHT - SHIP__WIDTH) {
             this.xpose = DIMENSIONS.CANVAS__WIDHT - SHIP__WIDTH;
         }
 
-        // detection on top wall
         if (this.ypose < 0) {
             this.ypose = 0;
         }
 
-        // detection on down wall
         if (this.ypose > DIMENSIONS.CANVAS__HEIGHT - 110) {
             this.ypose = DIMENSIONS.CANVAS__HEIGHT - 110;
         }

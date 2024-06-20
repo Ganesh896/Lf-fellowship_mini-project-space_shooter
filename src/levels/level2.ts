@@ -1,4 +1,4 @@
-import { IEnemyConfig } from "../types";
+import { IEnemyConfig, POWER__TYPE } from "../types";
 import Enemy from "../characters/enemy";
 import generateRandomNumber from "../utils/random";
 
@@ -20,6 +20,20 @@ export const level2Config: IEnemyConfig = {
                 enemies.push(enemy);
             }
         }
+
+        for (let i = 0; i < 2; i++) {
+            const randEnum = generateRandomNumber(0, 2);
+            let power = POWER__TYPE.ADDBULLET;
+            if (randEnum === 1) {
+                power = POWER__TYPE.ADDHEALTH;
+            } else if (randEnum === 2) {
+                power = POWER__TYPE.ADDROCKET;
+            }
+            const randIndex = generateRandomNumber(0, enemies.length - 1);
+            enemies[randIndex].isPower = true;
+            enemies[randIndex].powerType = power;
+        }
+
         return enemies;
     },
 };

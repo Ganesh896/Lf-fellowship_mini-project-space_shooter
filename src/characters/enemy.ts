@@ -1,5 +1,6 @@
 import { DIMENSIONS, ENEMY__WIDTH } from "../constants/constants";
 import { ctx } from "../html/html-elements";
+import { POWER__TYPE } from "../types";
 
 export interface IEnemy {
     img: string;
@@ -29,7 +30,21 @@ export default class Enemy implements IEnemy {
     initialX: number;
     initialY: number;
 
-    constructor(imgSrc: string, xpose: number, ypose: number, width: number, height: number, life: number, movementType: string = "linear") {
+    isPower: boolean;
+
+    powerType: string;
+
+    constructor(
+        imgSrc: string,
+        xpose: number,
+        ypose: number,
+        width: number,
+        height: number,
+        life: number,
+        movementType: string = "linear",
+        isPower: boolean = false,
+        powerType: string = POWER__TYPE.ADDBULLET
+    ) {
         this.img = imgSrc;
         this.width = width;
         this.height = height;
@@ -45,6 +60,9 @@ export default class Enemy implements IEnemy {
         this.movementType = movementType;
         this.initialX = xpose;
         this.initialY = ypose;
+
+        this.isPower = isPower;
+        this.powerType = powerType;
     }
 
     draw(): void {

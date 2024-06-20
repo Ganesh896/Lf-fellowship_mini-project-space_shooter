@@ -21,15 +21,17 @@ export default class Bullet implements IBullet {
     height: number;
     dx: number;
     dy: number;
+    projectile: string;
 
-    constructor(img: string, xpose: number, ypose: number, width: number, height: number) {
+    constructor(img: string, xpose: number, ypose: number, width: number, height: number, dx: number = 0, projectile: string = "straight") {
         this.img = img;
         this.width = width;
         this.height = height;
         this.xpose = xpose;
         this.ypose = ypose;
-        this.dx = 0;
+        this.dx = dx;
         this.dy = 5;
+        this.projectile = projectile;
     }
 
     draw(): void {
@@ -40,7 +42,15 @@ export default class Bullet implements IBullet {
     }
 
     updatePosition(): void {
-        this.ypose -= this.dy;
+        if (this.projectile === "straight") {
+            this.ypose -= this.dy;
+        } else if (this.projectile === "topLeft") {
+            this.ypose -= this.dy;
+            this.xpose -= this.dx;
+        } else if (this.projectile === "topRight") {
+            this.ypose -= this.dy;
+            this.xpose += this.dx;
+        }
 
         this.draw();
     }

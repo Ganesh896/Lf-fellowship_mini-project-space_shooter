@@ -8,3 +8,9 @@ export interface IEnemyConfig {
     enemyImage: string;
     generateEnemies: () => Enemy[];
 }
+
+export enum POWER__TYPE {
+    ADDBULLET = "addBullet",
+    ADDROCKET = "addRocket",
+    ADDHEALTH = "addHealth",
+}

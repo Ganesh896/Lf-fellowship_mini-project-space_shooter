@@ -1,17 +1,18 @@
 // Imports
 import SpaceShip from "./characters/player";
-import { DIMENSIONS, BULLET__WIDTH, BULLET__HEIGHT } from "./constants/constants";
+import { DIMENSIONS } from "./constants/constants";
 import { SHIP__WIDTH, SHIP__HEIGHT } from "./constants/constants";
 import { canvas, ctx, video } from "./html/html-elements";
 import { playerMovement } from "./components/player-movement";
-import Bullet from "./weapons/bullet";
-import { isEnemyCollide, isShipCollide } from "./helper";
+import { isCollide } from "./helper";
 import Particle from "./characters/explosion";
 import generateRandomNumber from "./utils/random";
 import EnemyBullet from "./weapons/enemy-bullet";
-import { drawCurrentScore, drawPauseText, gameOver } from "./components/texts";
+import { drawCurrentScore, drawGameOver, drawPauseText, gameOver } from "./components/texts";
 import { LevelManager } from "./levels/levelManager";
 import Enemy from "./characters/enemy";
+import { addBullet, addFourBullet, addRocket, addThreeBullet, addTwoBullet, bullets } from "./components/bullet-types";
+import Power from "./components/powerup";
 
 // Canvas dimensions
 canvas.width = DIMENSIONS.CANVAS__WIDHT;
@@ -21,18 +22,16 @@ canvas.height = DIMENSIONS.CANVAS__HEIGHT;
 export let currentScore = 0;
 export let highScore = localStorage.getItem("highscore") || 0;
 
+let bulletPowerCount = 0;
+let rocketPowerCount = 0;
+
 // Draw text
 function drawText() {
-    ctx.font = "60px Arial";
+    ctx.font = "60px Orbitron";
     ctx.fillStyle = "red";
-    ctx.fillText(`Wave ${1}/${3}`, canvas.width / 2 - 60, canvas.height / 2);
-}
-
-// Draw game over text
-function drawGameOver() {
-    ctx.font = "80px Arial";
-    ctx.fillStyle = "red";
-    ctx.fillText("GAME OVER", canvas.width / 2 - 200, canvas.height / 2);
+    const textString = `Wave ${1}/${3}`;
+    const stringWidth = ctx.measureText(textString).width;
+    ctx.fillText(textString, canvas.width / 2 - stringWidth / 2, canvas.height / 2);
 }
 
 // Level Manager
@@ -54,24 +53,29 @@ let explosionImages = Array.from({ length: 17 }, (_, i) => `/images/spaceship/bl
 // Bullet
 const bulletImg = "/images/spaceship/bullets/bullet.png";
 
-const bullets: Bullet[] = [];
 const spaceShip = new SpaceShip(spaceshipImages, explosionImages, DIMENSIONS.CANVAS__WIDHT / 2 - SHIP__WIDTH / 2, DIMENSIONS.CANVAS__HEIGHT - 110, SHIP__WIDTH, SHIP__HEIGHT, 3);
 
 const gunshotAudio = new Audio("/audio/gun-shoot.wav");
 gunshotAudio.volume = 0.3;
-
-const addBullet = function () {
-    const bullet = new Bullet(bulletImg, spaceShip.xpose + SHIP__WIDTH / 2 - 25, spaceShip.ypose - 30, BULLET__WIDTH, BULLET__HEIGHT);
-    bullets.push(bullet);
-    gunshotAudio.play();
-};
 
 // Fire bullets at intervals
 let bulletInterval: any;
 
 const startBulletInterval = () => {
     bulletInterval = setInterval(() => {
-        addBullet();
+        if (rocketPowerCount > 0) {
+            addRocket(spaceShip, gunshotAudio, "/images/spaceship/rocket.png");
+        } else {
+            if (bulletPowerCount == 0) {
+                addBullet(spaceShip, gunshotAudio, bulletImg);
+            } else if (bulletPowerCount == 1) {
+                addTwoBullet(spaceShip, gunshotAudio, bulletImg);
+            } else if (bulletPowerCount === 2) {
+                addThreeBullet(spaceShip, gunshotAudio, bulletImg);
+            } else {
+                addFourBullet(spaceShip, gunshotAudio, bulletImg);
+            }
+        }
     }, 200);
 };
 
@@ -84,6 +88,9 @@ let enemies: Enemy[] = currentLevel.generateEnemies(); // Initialize enemies fro
 
 // Particles of explosion
 const particles: Particle[] = [];
+
+// power ups
+const powers: Power[] = [];
 
 // Enemy bullets
 export const enemyBullets: EnemyBullet[] = [];
@@ -127,8 +134,9 @@ function drawFrames() {
         }
     });
 
+    ctx.save(); // Save the canvas state before drawing the spaceship
     spaceShip.playerMovement(playerMovement.moveRight, playerMovement.moveLeft, playerMovement.moveUp, playerMovement.moveDown);
-    spaceShip.draw();
+    ctx.restore(); // Restore the canvas state after drawing the spaceship
 
     bullets.forEach((b, index) => {
         b.updatePosition();
@@ -141,9 +149,32 @@ function drawFrames() {
         drawText();
     }
 
+    // powers colide with spaceship
+    powers.forEach((power) => {
+        power.updatePosition();
+    });
+
+    powers.forEach((power, i) => {
+        if (isCollide(power, spaceShip) || power.ypose > canvas.height) {
+            powers.splice(i, 1);
+        }
+
+        if (isCollide(power, spaceShip)) {
+            if (power.powerType === "addBullet") {
+                bulletPowerCount++;
+                rocketPowerCount = 0;
+            } else if (power.powerType === "addRocket") {
+                rocketPowerCount++;
+                bulletPowerCount = 0;
+            } else if (power.powerType === "addHealth") {
+                spaceShip.life = 3;
+            }
+        }
+    });
+
     for (let i = 0; i < bullets.length; i++) {
         for (let j = 0; j < enemies.length; j++) {
-            if (isEnemyCollide(bullets[i], enemies[j])) {
+            if (isCollide(bullets[i], enemies[j])) {
                 if (enemies[j].life > 0) {
                     enemies[j].life--;
                     enemies[j].showLifeBar = true;
@@ -157,6 +188,16 @@ function drawFrames() {
                         const r = Math.random() * 5;
                         particles.push(new Particle(enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, vx, vy, r, "#cc0118"));
                     }
+
+                    if (enemies[j].isPower) {
+                        if (enemies[j].powerType === "addBullet") {
+                            powers.push(new Power("/images/spaceship/powerup1.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 20, 20));
+                        } else if (enemies[j].powerType === "addRocket") {
+                            powers.push(new Power("/images/spaceship/powerRocket.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 20, 20, "addRocket"));
+                        } else if (enemies[j].powerType === "addHealth") {
+                            powers.push(new Power("/images/spaceship/powerHealth.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 20, 20, "addHealth"));
+                        }
+                    }
                 }
                 bullets.splice(i, 1);
                 break;
@@ -164,6 +205,7 @@ function drawFrames() {
         }
     }
 
+    // remove enemy when its life ended
     for (let j = 0; j < enemies.length; j++) {
         if (enemies[j].life <= 0) {
             enemies.splice(j, 1);
@@ -171,17 +213,20 @@ function drawFrames() {
         }
     }
 
+    // updating and drawing enemy
     enemies.forEach((enemy) => {
         enemy.updatePosition(frameCount);
         enemy.draw();
     });
 
+    // finished one set of enemies
     if (enemies.length === 0) {
         levelManager.goToNextLevel();
         currentLevel = levelManager.getCurrentLevel();
         enemies = currentLevel.generateEnemies();
     }
 
+    // assign bullet to random enemy
     if (frameCount % 100 === 0 && enemies.length > 0) {
         const randEnemyBullet = generateRandomNumber(0, enemies.length - 1);
         enemyBullets.push(
@@ -195,10 +240,12 @@ function drawFrames() {
         );
     }
 
+    // enemy shoot bullet
     enemyBullets.forEach((b) => {
         b.shoot();
     });
 
+    // gameOver
     if (spaceShip.life <= 0) {
         gameOver();
         gunshotAudio.pause();
@@ -209,8 +256,9 @@ function drawFrames() {
         return;
     }
 
+    // enemy bullet collison with player space ship
     enemyBullets.forEach((bullet, i) => {
-        if (isShipCollide(bullet, spaceShip)) {
+        if (isCollide(bullet, spaceShip)) {
             if (spaceShip.life > 0) {
                 spaceShip.life--;
             }
@@ -227,13 +275,11 @@ function drawFrames() {
 function togglePause() {
     isPaused = !isPaused;
     if (!isPaused) {
-        drawPauseText("Play");
-
         drawFrames();
         startBulletInterval();
         background.play();
     } else {
-        drawPauseText("Pause");
+        drawPauseText();
         stopBulletInterval();
         background.pause();
         cancelAnimationFrame(animationFrameId);
@@ -253,3 +299,5 @@ video.addEventListener("canplay", () => {
         startBulletInterval();
     }
 });
+
+video.play();

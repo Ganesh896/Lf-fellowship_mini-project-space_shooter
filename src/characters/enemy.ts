@@ -84,8 +84,8 @@ export default class Enemy implements IEnemy {
                 this.ypose += this.dy;
                 break;
             case "circular":
-                this.xpose += this.initialX + Math.cos(frameCount * 0.05) * 50;
-                this.ypose += this.initialY + Math.sin(frameCount * 0.05) * 50;
+                this.xpose = this.initialX + Math.cos(frameCount * 0.05) * 50;
+                this.ypose = this.initialY + Math.sin(frameCount * 0.05) * 50;
                 break;
             case "zigzag":
                 this.xpose += this.dx * Math.sin(frameCount * 0.1);
@@ -94,13 +94,13 @@ export default class Enemy implements IEnemy {
             default: // linear
                 this.xpose += this.dx;
                 this.ypose += this.dy;
-                if (this.ypose > 0) {
+                if (this.ypose > 0 && this.xpose > 0) {
                     this.insideCanvas = true;
                 }
                 if (this.insideCanvas && this.ypose < 0) {
                     this.dy *= -1;
                 }
-                if (this.xpose + ENEMY__WIDTH > DIMENSIONS.CANVAS__WIDHT) {
+                if (this.xpose + this.width > DIMENSIONS.CANVAS__WIDHT) {
                     this.dx *= -1;
                 }
                 if (this.insideCanvas && this.xpose < 0) {

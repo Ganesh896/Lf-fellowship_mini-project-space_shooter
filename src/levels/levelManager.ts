@@ -1,30 +1,50 @@
-import { level1Config } from "./level1";
-import { level2Config } from "./level2";
-import { level3Config } from "./level3";
-import { IEnemyConfig } from "../types";
+// levels/levelManager.ts
+import { Level } from "./level";
+import { waveGenerator } from "../components/wave";
+import Enemy from "../characters/enemy";
 
 export class LevelManager {
-    private levels: IEnemyConfig[];
-    private currentLevelIndex: number;
+    levels: Level[];
+    currentLevelIndex: number;
 
     constructor() {
-        this.levels = [level1Config, level2Config, level3Config];
+        this.levels = [];
         this.currentLevelIndex = 0;
+        this.initLevels();
     }
 
-    getCurrentLevel() {
+    initLevels() {
+        // Initialize your levels here
+        const level1Waves = [
+            waveGenerator("/images/enemies/enemy1.png", 3, 4, 2, 2, ["linear", "sine"]),
+            waveGenerator("/images/enemies/enemy2.png", 4, 3, 3, 2, ["zigzag", "circular"]),
+            waveGenerator("/images/enemies/enemy3.png", 5, 5, 1, 1, ["linear", "circular"]),
+        ];
+        const level1Boss = new Enemy("/images/enemies/boss1.png", 200, -100, 100, 100, 10, "zigzag");
+        const level1 = new Level(level1Waves, level1Boss);
+
+        const level2Waves = [
+            waveGenerator("/images/enemies/enemy4.gif", 3, 5, 2, 3, ["linear", "zigzag"]),
+            waveGenerator("/images/enemies/enemy5.gif", 4, 4, 4, 1, ["sine", "circular"]),
+            waveGenerator("/images/enemies/enemy6.gif", 5, 3, 2, 2, ["linear", "sine"]),
+        ];
+        const level2Boss = new Enemy("/images/enemies/enemy4.gif", 250, -100, 120, 120, 15, "circular");
+        const level2 = new Level(level2Waves, level2Boss);
+
+        this.levels.push(level1, level2);
+    }
+
+    getCurrentLevel(): Level {
         return this.levels[this.currentLevelIndex];
     }
 
     goToNextLevel() {
         if (this.currentLevelIndex < this.levels.length - 1) {
             this.currentLevelIndex++;
-        } else {
-            console.log("No more levels. Game Over!");
         }
     }
 
-    reset() {
-        this.currentLevelIndex = 0;
+    isLastLevel(): boolean {
+        return this.currentLevelIndex >= this.levels.length - 1;
     }
 }

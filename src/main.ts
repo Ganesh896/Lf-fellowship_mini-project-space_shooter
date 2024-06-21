@@ -1,4 +1,4 @@
-// Imports
+// main.ts
 import SpaceShip from "./characters/player";
 import { DIMENSIONS } from "./constants/constants";
 import { SHIP__WIDTH, SHIP__HEIGHT } from "./constants/constants";
@@ -26,10 +26,9 @@ let bulletPowerCount = 0;
 let rocketPowerCount = 0;
 
 // Draw text
-function drawText() {
+function drawText(textString: string) {
     ctx.font = "60px Orbitron";
     ctx.fillStyle = "red";
-    const textString = `Wave ${1}/${3}`;
     const stringWidth = ctx.measureText(textString).width;
     ctx.fillText(textString, canvas.width / 2 - stringWidth / 2, canvas.height / 2);
 }
@@ -37,6 +36,7 @@ function drawText() {
 // Level Manager
 const levelManager = new LevelManager();
 let currentLevel = levelManager.getCurrentLevel();
+let currentWaveIndex = 0;
 
 // Enemy ships
 let spaceshipImages = [
@@ -53,7 +53,7 @@ let explosionImages = Array.from({ length: 17 }, (_, i) => `/images/spaceship/bl
 // Bullet
 const bulletImg = "/images/spaceship/bullets/bullet.png";
 
-const spaceShip = new SpaceShip(spaceshipImages, explosionImages, DIMENSIONS.CANVAS__WIDHT / 2 - SHIP__WIDTH / 2, DIMENSIONS.CANVAS__HEIGHT - 110, SHIP__WIDTH, SHIP__HEIGHT, 3);
+const spaceShip = new SpaceShip(spaceshipImages, explosionImages, DIMENSIONS.CANVAS__WIDHT / 2 - SHIP__WIDTH / 2, DIMENSIONS.CANVAS__HEIGHT - 110, SHIP__WIDTH, SHIP__HEIGHT, 5);
 
 const gunshotAudio = new Audio("/audio/gun-shoot.wav");
 gunshotAudio.volume = 0.3;
@@ -106,6 +106,10 @@ background.loop = true;
 background.volume = 0.2;
 background.currentTime = 0;
 
+// Variables for displaying wave and level text
+let showText = true;
+let textDisplayTime = 100; // Adjust this for how long the text is displayed
+
 // Function to draw frames
 function drawFrames() {
     if (gameOverFlag) {
@@ -145,8 +149,13 @@ function drawFrames() {
         }
     });
 
-    if (frameCount < 100) {
-        drawText();
+    if (showText) {
+        const textString = `Level ${levelManager.currentLevelIndex + 1} - Wave ${currentLevel.currentWave + 1}/${currentLevel.waves.length + 1}`;
+        drawText(textString);
+        if (frameCount > textDisplayTime) {
+            showText = false;
+            frameCount = 0;
+        }
     }
 
     // powers colide with spaceship
@@ -167,7 +176,7 @@ function drawFrames() {
                 rocketPowerCount++;
                 bulletPowerCount = 0;
             } else if (power.powerType === "addHealth") {
-                spaceShip.life = 3;
+                spaceShip.life = 5;
             }
         }
     });
@@ -176,9 +185,14 @@ function drawFrames() {
         for (let j = 0; j < enemies.length; j++) {
             if (isCollide(bullets[i], enemies[j])) {
                 if (enemies[j].life > 0) {
-                    enemies[j].life--;
                     enemies[j].showLifeBar = true;
                     enemies[j].lifeBarTimer = 120;
+
+                    if (rocketPowerCount > 0) {
+                        enemies[j].life -= 2;
+                    } else {
+                        enemies[j].life--;
+                    }
                 }
 
                 if (enemies[j].life <= 0) {
@@ -191,11 +205,11 @@ function drawFrames() {
 
                     if (enemies[j].isPower) {
                         if (enemies[j].powerType === "addBullet") {
-                            powers.push(new Power("/images/spaceship/powerup1.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 20, 20));
+                            powers.push(new Power("/images/spaceship/powerup1.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 25, 25));
                         } else if (enemies[j].powerType === "addRocket") {
-                            powers.push(new Power("/images/spaceship/powerRocket.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 20, 20, "addRocket"));
+                            powers.push(new Power("/images/spaceship/powerRocket.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 25, 25, "addRocket"));
                         } else if (enemies[j].powerType === "addHealth") {
-                            powers.push(new Power("/images/spaceship/powerHealth.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 20, 20, "addHealth"));
+                            powers.push(new Power("/images/spaceship/powerHealth.png", enemies[j].xpose + enemies[j].width / 2, enemies[j].ypose + enemies[j].height / 2, 25, 25, "addHealth"));
                         }
                     }
                 }
@@ -221,9 +235,28 @@ function drawFrames() {
 
     // finished one set of enemies
     if (enemies.length === 0) {
-        levelManager.goToNextLevel();
-        currentLevel = levelManager.getCurrentLevel();
-        enemies = currentLevel.generateEnemies();
+        if (currentLevel.isBossLevel()) {
+            levelManager.goToNextLevel();
+            // if (levelManager.isLastLevel()) {
+            //     console.log("You completed all levels!");
+            //     return;
+            // } else {
+            currentLevel = levelManager.getCurrentLevel();
+            currentWaveIndex = 0;
+            enemies = currentLevel.generateEnemies();
+            showText = true; // Show wave text for the next wave
+            frameCount = 0;
+            // }
+        } else {
+            currentLevel.goToNextWave();
+            currentWaveIndex++;
+            enemies = currentLevel.generateEnemies();
+            showText = true; // Show wave text for the next wave
+            frameCount = 0;
+            // console.log(enemies);
+            console.log(currentLevel);
+            console.log(currentWaveIndex);
+        }
     }
 
     // assign bullet to random enemy

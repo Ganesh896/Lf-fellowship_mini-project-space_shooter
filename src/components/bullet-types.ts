@@ -42,7 +42,7 @@ export const addFourBullet = function (spaceShip: SpaceShip, gunshotAudio: any, 
 };
 
 export const addRocket = function (spaceShip: SpaceShip, gunshotAudio: any, bulletImg: string) {
-    const bullet = new Bullet(bulletImg, spaceShip.xpose + SHIP__WIDTH / 2 - 25, spaceShip.ypose - 30, BULLET__WIDTH, BULLET__HEIGHT);
+    const bullet = new Bullet(bulletImg, spaceShip.xpose + SHIP__WIDTH / 2 - 25, spaceShip.ypose - 30, BULLET__WIDTH - 25, BULLET__HEIGHT - 25);
     bullets.push(bullet);
     gunshotAudio.play();
 };

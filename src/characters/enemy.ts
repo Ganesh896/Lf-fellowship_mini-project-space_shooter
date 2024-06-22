@@ -1,4 +1,4 @@
-import { DIMENSIONS, ENEMY__WIDTH } from "../constants/constants";
+import { DIMENSIONS } from "../constants/constants";
 import { ctx } from "../html/html-elements";
 import { POWER__TYPE } from "../types";
 

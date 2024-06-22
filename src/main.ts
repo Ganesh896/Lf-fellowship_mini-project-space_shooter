@@ -334,3 +334,38 @@ video.addEventListener("canplay", () => {
 });
 
 video.play();
+
+// Function to handle touch move events
+function handleTouchMove(event: TouchEvent) {
+    event.preventDefault();
+    const touch = event.touches[0];
+
+    // Get the touch coordinates relative to the canvas
+    const rect = canvas.getBoundingClientRect();
+    const touchX = touch.clientX - rect.left;
+    const touchY = touch.clientY - rect.top;
+
+    // Update spaceship position
+    spaceShip.playerMovement(false, false, false, false, touchX - spaceShip.width / 2, touchY - spaceShip.height / 2);
+}
+
+// Add event listeners for touch events
+canvas.addEventListener("touchstart", handleTouchMove, false);
+canvas.addEventListener("touchmove", handleTouchMove, false);
+
+// Prevent default scrolling on the canvas
+canvas.addEventListener(
+    "touchstart",
+    function (event) {
+        event.preventDefault();
+    },
+    false
+);
+
+canvas.addEventListener(
+    "touchmove",
+    function (event) {
+        event.preventDefault();
+    },
+    false
+);

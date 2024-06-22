@@ -11,7 +11,7 @@ export interface ISpaceShip {
 
     draw: () => void;
 
-    playerMovement: (moveRight: boolean, moveLeft: boolean, moveUp: boolean, moveDown: boolean) => void;
+    playerMovement: (moveRight: boolean, moveLeft: boolean, moveUp: boolean, moveDown: boolean, x?: number, y?: number) => void;
 }
 
 export default class SpaceShip implements ISpaceShip {
@@ -92,21 +92,26 @@ export default class SpaceShip implements ISpaceShip {
         ctx.stroke();
     }
 
-    playerMovement(moveRight: boolean, moveLeft: boolean, moveUp: boolean, moveDown: boolean): void {
-        if (moveRight) {
-            this.xpose += this.dx;
-            this.skewAngle = 0.4; // Skew right
-        } else if (moveLeft) {
-            this.xpose -= this.dx;
-            this.skewAngle = -0.4; // Skew left
+    playerMovement(moveRight: boolean, moveLeft: boolean, moveUp: boolean, moveDown: boolean, x?: number, y?: number): void {
+        if (x !== undefined && y !== undefined) {
+            this.xpose = x;
+            this.ypose = y;
         } else {
-            this.skewAngle = 0; // No skew
-        }
+            if (moveRight) {
+                this.xpose += this.dx;
+                this.skewAngle = 0.4; // Skew right
+            } else if (moveLeft) {
+                this.xpose -= this.dx;
+                this.skewAngle = -0.4; // Skew left
+            } else {
+                this.skewAngle = 0; // No skew
+            }
 
-        if (moveUp) {
-            this.ypose -= this.dy;
-        } else if (moveDown) {
-            this.ypose += this.dy;
+            if (moveUp) {
+                this.ypose -= this.dy;
+            } else if (moveDown) {
+                this.ypose += this.dy;
+            }
         }
 
         if (this.xpose < 0) {

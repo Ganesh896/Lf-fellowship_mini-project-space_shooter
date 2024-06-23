@@ -55,3 +55,9 @@ export function drawGameOver() {
 
     ctx.fillText(textString, canvas.width / 2 - textWidth / 2, canvas.height / 2);
 }
+
+export function drawLevels(textString: string) {
+    ctx.font = "40px Orbitron";
+    ctx.fillStyle = "red";
+    ctx.fillText(textString, 20, 90);
+}

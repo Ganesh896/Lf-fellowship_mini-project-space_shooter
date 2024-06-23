@@ -1,18 +1,24 @@
-// main.ts
 import SpaceShip from "./characters/player";
-import { DIMENSIONS } from "./constants/constants";
+import { DIMENSIONS, bulletImages, spaceShipImages } from "./constants/constants";
 import { SHIP__WIDTH, SHIP__HEIGHT } from "./constants/constants";
-import { canvas, ctx, video } from "./html/html-elements";
+import { canvas, ctx, startButton, startWindow, video } from "./html/html-elements";
 import { playerMovement } from "./components/player-movement";
-import { isCollide } from "./helper";
+import { initialIndex, isCollide } from "./helper";
 import Particle from "./characters/explosion";
 import generateRandomNumber from "./utils/random";
 import EnemyBullet from "./weapons/enemy-bullet";
-import { drawCurrentScore, drawGameOver, drawPauseText, gameOver } from "./components/texts";
+import { drawCurrentScore, drawGameOver, drawLevels, drawPauseText, gameOver } from "./components/texts";
 import { LevelManager } from "./levels/levelManager";
 import Enemy from "./characters/enemy";
 import { addBullet, addFourBullet, addRocket, addThreeBullet, addTwoBullet, bullets } from "./components/bullet-types";
 import Power from "./components/powerup";
+
+// Initialize game variables
+let gameInitialized = false;
+let animationFrameId: number;
+let gameOverFlag = false;
+let isPaused = false;
+let bulletInterval: any;
 
 // Canvas dimensions
 canvas.width = DIMENSIONS.CANVAS__WIDHT;
@@ -25,43 +31,43 @@ export let highScore = localStorage.getItem("highscore") || 0;
 let bulletPowerCount = 0;
 let rocketPowerCount = 0;
 
-// Draw text
-function drawText(textString: string) {
-    ctx.font = "60px Orbitron";
-    ctx.fillStyle = "red";
-    const stringWidth = ctx.measureText(textString).width;
-    ctx.fillText(textString, canvas.width / 2 - stringWidth / 2, canvas.height / 2);
+// Initialize game objects (using initialIndex for selected spaceship and bullet images)
+let spaceShip: SpaceShip;
+let bulletImg: string;
+let explosionImages: string[];
+
+function initializeGameObjects() {
+    const spaceshipImages = spaceShipImages[initialIndex];
+    explosionImages = Array.from({ length: 17 }, (_, i) => `/images/spaceship/blueship/explosion/explosion${i}.png`);
+    bulletImg = bulletImages[initialIndex];
+    spaceShip = new SpaceShip(spaceshipImages, explosionImages, DIMENSIONS.CANVAS__WIDHT / 2 - SHIP__WIDTH / 2, DIMENSIONS.CANVAS__HEIGHT - 110, SHIP__WIDTH, SHIP__HEIGHT, 5);
 }
-
-// Level Manager
-const levelManager = new LevelManager();
-let currentLevel = levelManager.getCurrentLevel();
-let currentWaveIndex = 0;
-
-// Enemy ships
-let spaceshipImages = [
-    "/images/spaceship/blueship/blueship1.png",
-    "/images/spaceship/blueship/blueship2.png",
-    "/images/spaceship/blueship/blueship3.png",
-    "/images/spaceship/blueship/blueship4.png",
-    "/images/spaceship/blueship/blueship5.png",
-];
-
-// Explosion images
-let explosionImages = Array.from({ length: 17 }, (_, i) => `/images/spaceship/blueship/explosion/explosion${i}.png`);
-
-// Bullet
-const bulletImg = "/images/spaceship/bullets/bullet.png";
-
-const spaceShip = new SpaceShip(spaceshipImages, explosionImages, DIMENSIONS.CANVAS__WIDHT / 2 - SHIP__WIDTH / 2, DIMENSIONS.CANVAS__HEIGHT - 110, SHIP__WIDTH, SHIP__HEIGHT, 5);
 
 const gunshotAudio = new Audio("/audio/gun-shoot.wav");
 gunshotAudio.volume = 0.3;
 
-// Fire bullets at intervals
-let bulletInterval: any;
+// Enemy and level management
+const levelManager = new LevelManager();
+let currentLevel = levelManager.getCurrentLevel();
+let currentWaveIndex = 0;
+let enemies: Enemy[] = [];
+const particles: Particle[] = [];
+const powers: Power[] = [];
+export const enemyBullets: EnemyBullet[] = [];
 
-const startBulletInterval = () => {
+// Background music
+const background = new Audio();
+background.src = "/audio/background.mp3";
+background.loop = true;
+background.volume = 0.2;
+background.currentTime = 0;
+
+// Display text variables
+let showText = true;
+let textDisplayTime = 100;
+
+// Game control functions
+function startBulletInterval() {
     bulletInterval = setInterval(() => {
         if (rocketPowerCount > 0) {
             addRocket(spaceShip, gunshotAudio, "/images/spaceship/rocket.png");
@@ -77,40 +83,12 @@ const startBulletInterval = () => {
             }
         }
     }, 200);
-};
+}
 
-const stopBulletInterval = () => {
+function stopBulletInterval() {
     clearInterval(bulletInterval);
-};
+}
 
-let frameCount = 0;
-let enemies: Enemy[] = currentLevel.generateEnemies(); // Initialize enemies from level config
-
-// Particles of explosion
-const particles: Particle[] = [];
-
-// power ups
-const powers: Power[] = [];
-
-// Enemy bullets
-export const enemyBullets: EnemyBullet[] = [];
-
-let animationFrameId: number;
-let gameOverFlag = false;
-let isPaused = false; // Add a flag to indicate if the game is paused
-
-// Add background music
-const background = new Audio();
-background.src = "/audio/background.mp3";
-background.loop = true;
-background.volume = 0.2;
-background.currentTime = 0;
-
-// Variables for displaying wave and level text
-let showText = true;
-let textDisplayTime = 100; // Adjust this for how long the text is displayed
-
-// Function to draw frames
 function drawFrames() {
     if (gameOverFlag) {
         drawGameOver();
@@ -122,6 +100,7 @@ function drawFrames() {
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let frameCount = 0;
     frameCount++;
 
     if (background.paused) {
@@ -138,9 +117,9 @@ function drawFrames() {
         }
     });
 
-    ctx.save(); // Save the canvas state before drawing the spaceship
+    ctx.save();
     spaceShip.playerMovement(playerMovement.moveRight, playerMovement.moveLeft, playerMovement.moveUp, playerMovement.moveDown);
-    ctx.restore(); // Restore the canvas state after drawing the spaceship
+    ctx.restore();
 
     bullets.forEach((b, index) => {
         b.updatePosition();
@@ -151,14 +130,13 @@ function drawFrames() {
 
     if (showText) {
         const textString = `Level ${levelManager.currentLevelIndex + 1} - Wave ${currentLevel.currentWave + 1}/${currentLevel.waves.length + 1}`;
-        drawText(textString);
+        drawLevels(textString);
         if (frameCount > textDisplayTime) {
             showText = false;
             frameCount = 0;
         }
     }
 
-    // powers colide with spaceship
     powers.forEach((power) => {
         power.updatePosition();
     });
@@ -219,7 +197,6 @@ function drawFrames() {
         }
     }
 
-    // remove enemy when its life ended
     for (let j = 0; j < enemies.length; j++) {
         if (enemies[j].life <= 0) {
             enemies.splice(j, 1);
@@ -227,39 +204,28 @@ function drawFrames() {
         }
     }
 
-    // updating and drawing enemy
     enemies.forEach((enemy) => {
         enemy.updatePosition(frameCount);
         enemy.draw();
     });
 
-    // finished one set of enemies
     if (enemies.length === 0) {
         if (currentLevel.isBossLevel()) {
             levelManager.goToNextLevel();
-            // if (levelManager.isLastLevel()) {
-            //     console.log("You completed all levels!");
-            //     return;
-            // } else {
             currentLevel = levelManager.getCurrentLevel();
             currentWaveIndex = 0;
             enemies = currentLevel.generateEnemies();
-            showText = true; // Show wave text for the next wave
+            showText = true;
             frameCount = 0;
-            // }
         } else {
             currentLevel.goToNextWave();
             currentWaveIndex++;
             enemies = currentLevel.generateEnemies();
-            showText = true; // Show wave text for the next wave
+            showText = true;
             frameCount = 0;
-            // console.log(enemies);
-            console.log(currentLevel);
-            console.log(currentWaveIndex);
         }
     }
 
-    // assign bullet to random enemy
     if (frameCount % 100 === 0 && enemies.length > 0) {
         const randEnemyBullet = generateRandomNumber(0, enemies.length - 1);
         enemyBullets.push(
@@ -273,12 +239,10 @@ function drawFrames() {
         );
     }
 
-    // enemy shoot bullet
     enemyBullets.forEach((b) => {
         b.shoot();
     });
 
-    // gameOver
     if (spaceShip.life <= 0) {
         gameOver();
         gunshotAudio.pause();
@@ -289,7 +253,6 @@ function drawFrames() {
         return;
     }
 
-    // enemy bullet collison with player space ship
     enemyBullets.forEach((bullet, i) => {
         if (isCollide(bullet, spaceShip)) {
             if (spaceShip.life > 0) {
@@ -304,7 +267,7 @@ function drawFrames() {
     animationFrameId = requestAnimationFrame(drawFrames);
 }
 
-// Toggle play/pause
+// pause/play
 function togglePause() {
     isPaused = !isPaused;
     if (!isPaused) {
@@ -319,53 +282,32 @@ function togglePause() {
     }
 }
 
-// Add event listeners for play/pause
+// Event listeners for play/pause
 window.addEventListener("keypress", function (e) {
     if (e.key === " ") {
         togglePause();
     }
 });
-// Start drawing the video once it is loaded
-video.addEventListener("canplay", () => {
-    if (!animationFrameId) {
-        drawFrames();
+
+// Event listener for the start button to start the game
+startButton!.addEventListener("click", () => {
+    canvas!.style.display = "block";
+    startWindow!.style.display = "none";
+    video.style.display = "block";
+
+    if (!gameInitialized) {
+        initializeGameObjects();
+        enemies = currentLevel.generateEnemies();
         startBulletInterval();
+        drawFrames();
+        gameInitialized = true;
+    } else {
+        togglePause();
     }
 });
 
-video.play();
-
-// Function to handle touch move events
-function handleTouchMove(event: TouchEvent) {
-    event.preventDefault();
-    const touch = event.touches[0];
-
-    // Get the touch coordinates relative to the canvas
-    const rect = canvas.getBoundingClientRect();
-    const touchX = touch.clientX - rect.left;
-    const touchY = touch.clientY - rect.top;
-
-    // Update spaceship position
-    spaceShip.playerMovement(false, false, false, false, touchX - spaceShip.width / 2, touchY - spaceShip.height / 2);
-}
-
-// Add event listeners for touch events
-canvas.addEventListener("touchstart", handleTouchMove, false);
-canvas.addEventListener("touchmove", handleTouchMove, false);
-
-// Prevent default scrolling on the canvas
-canvas.addEventListener(
-    "touchstart",
-    function (event) {
-        event.preventDefault();
-    },
-    false
-);
-
-canvas.addEventListener(
-    "touchmove",
-    function (event) {
-        event.preventDefault();
-    },
-    false
-);
+video.addEventListener("canplay", () => {
+    if (!gameInitialized) {
+        background.play();
+    }
+});

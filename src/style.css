@@ -8,6 +8,7 @@ body {
     position: relative;
     width: 100%;
     height: 100vh;
+    font-family: "Pixelify Sans", sans-serif;
 }
 
 html {
@@ -15,7 +16,74 @@ html {
 }
 
 #galaxy {
-    /* width: 100%;
-    height: 100%; */
     display: none;
+}
+
+#canvas {
+    display: none;
+}
+
+.start__window {
+    width: 100%;
+    height: 100%;
+    background: url("/public/images/galaxy.jpg");
+    background-position: center;
+    object-fit: cover;
+    background-repeat: no-repeat;
+    background-size: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.start__window h1 {
+    font-size: 72px;
+    background: -webkit-linear-gradient(#314755, #26a0da, #e684ae);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+img {
+    width: 100%;
+    max-width: 150px;
+}
+
+.start__button {
+    outline: none;
+    border: none;
+    padding: 16px 24px;
+    font-size: clamp(20px, 6vw, 30px);
+    font-family: "Pixelify Sans", sans-serif;
+    border-radius: 5px;
+    background: rgb(2, 0, 36);
+    background: linear-gradient(90deg, rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%);
+    color: #fff;
+    cursor: pointer;
+    margin-top: 16px;
+}
+
+.spaceship {
+    position: relative;
+}
+
+.spaceship button {
+    position: absolute;
+    font-size: 24px;
+    cursor: pointer;
+    color: #fff;
+    background: none;
+    border: none;
+}
+
+#previous__ship {
+    top: 50%;
+    transform: translateY(-50%);
+    left: -20px;
+}
+
+#next__ship {
+    top: 50%;
+    transform: translateY(-50%);
+    right: -20px;
 }

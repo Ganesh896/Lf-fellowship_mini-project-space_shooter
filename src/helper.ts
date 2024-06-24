@@ -19,6 +19,16 @@ export function isCollide(bullet: Weapon, enemy: Character) {
     return isColliding;
 }
 
+export function isCollideWithEnemy(spaceShip: Character, enemy: Character) {
+    const isColliding =
+        spaceShip.xpose + spaceShip.width > enemy.xpose &&
+        spaceShip.xpose < enemy.xpose + enemy.width &&
+        spaceShip.ypose + spaceShip.height >= enemy.ypose &&
+        spaceShip.ypose + spaceShip.height <= enemy.ypose + enemy.height;
+
+    return isColliding;
+}
+
 //selecting spaceship
 export let initialIndex = 0;
 

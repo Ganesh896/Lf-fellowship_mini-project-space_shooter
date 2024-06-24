@@ -3,11 +3,11 @@ import { DIMENSIONS, bulletImages, spaceShipImages } from "./constants/constants
 import { SHIP__WIDTH, SHIP__HEIGHT } from "./constants/constants";
 import { canvas, ctx, startButton, startWindow, video } from "./html/html-elements";
 import { playerMovement } from "./components/player-movement";
-import { initialIndex, isCollide } from "./helper";
+import { initialIndex, isCollide, isCollideWithEnemy } from "./helper";
 import Particle from "./characters/explosion";
 import generateRandomNumber from "./utils/random";
 import EnemyBullet from "./weapons/enemy-bullet";
-import { drawCurrentScore, drawGameOver, drawLevels, drawPauseText, gameOver } from "./components/texts";
+import { drawCurrentScore, drawLevels, drawPauseText, gameOver } from "./components/texts";
 import { LevelManager } from "./levels/levelManager";
 import Enemy from "./characters/enemy";
 import { addBullet, addFourBullet, addRocket, addThreeBullet, addTwoBullet, bullets } from "./components/bullet-types";
@@ -26,12 +26,12 @@ canvas.height = DIMENSIONS.CANVAS__HEIGHT;
 
 // Score
 export let currentScore = 0;
-export let highScore = localStorage.getItem("highscore") || 0;
+export let highScore = Number(localStorage.getItem("highscore") || 0);
 
 let bulletPowerCount = 0;
 let rocketPowerCount = 0;
 
-// Initialize game objects (using initialIndex for selected spaceship and bullet images)
+// Initialize game
 let spaceShip: SpaceShip;
 let bulletImg: string;
 let explosionImages: string[];
@@ -43,6 +43,7 @@ function initializeGameObjects() {
     spaceShip = new SpaceShip(spaceshipImages, explosionImages, DIMENSIONS.CANVAS__WIDHT / 2 - SHIP__WIDTH / 2, DIMENSIONS.CANVAS__HEIGHT - 110, SHIP__WIDTH, SHIP__HEIGHT, 5);
 }
 
+// gunshoot audio
 const gunshotAudio = new Audio("/audio/gun-shoot.wav");
 gunshotAudio.volume = 0.3;
 
@@ -89,9 +90,12 @@ function stopBulletInterval() {
     clearInterval(bulletInterval);
 }
 
+let frameCount = 0;
+// animation function
 function drawFrames() {
+    frameCount++;
+
     if (gameOverFlag) {
-        drawGameOver();
         return;
     }
 
@@ -100,8 +104,6 @@ function drawFrames() {
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let frameCount = 0;
-    frameCount++;
 
     if (background.paused) {
         background.play();
@@ -109,6 +111,7 @@ function drawFrames() {
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    // particle explosion on klling enemy
     particles.forEach((particle, index) => {
         if (particle.opacity <= 0) {
             particles.splice(index, 1);
@@ -117,10 +120,12 @@ function drawFrames() {
         }
     });
 
+    // spaceShip Movement and tilting effect
     ctx.save();
     spaceShip.playerMovement(playerMovement.moveRight, playerMovement.moveLeft, playerMovement.moveUp, playerMovement.moveDown);
     ctx.restore();
 
+    // player bullets
     bullets.forEach((b, index) => {
         b.updatePosition();
         if (b.ypose < 0) {
@@ -128,8 +133,12 @@ function drawFrames() {
         }
     });
 
+    // level and wave text
     if (showText) {
-        const textString = `Level ${levelManager.currentLevelIndex + 1} - Wave ${currentLevel.currentWave + 1}/${currentLevel.waves.length + 1}`;
+        let textString = `Level ${levelManager.currentLevelIndex + 1} - Wave ${currentLevel.currentWave + 1}/${currentLevel.waves.length + 1}`;
+        if (currentLevel.currentWave >= 3) {
+            textString = `Warning Boss`;
+        }
         drawLevels(textString);
         if (frameCount > textDisplayTime) {
             showText = false;
@@ -137,10 +146,12 @@ function drawFrames() {
         }
     }
 
+    // powers
     powers.forEach((power) => {
         power.updatePosition();
     });
 
+    // power collide with player
     powers.forEach((power, i) => {
         if (isCollide(power, spaceShip) || power.ypose > canvas.height) {
             powers.splice(i, 1);
@@ -159,6 +170,7 @@ function drawFrames() {
         }
     });
 
+    // bullets and enemy collision
     for (let i = 0; i < bullets.length; i++) {
         for (let j = 0; j < enemies.length; j++) {
             if (isCollide(bullets[i], enemies[j])) {
@@ -197,6 +209,7 @@ function drawFrames() {
         }
     }
 
+    // removing enemies if lifes over
     for (let j = 0; j < enemies.length; j++) {
         if (enemies[j].life <= 0) {
             enemies.splice(j, 1);
@@ -204,28 +217,35 @@ function drawFrames() {
         }
     }
 
+    // showing enemies
     enemies.forEach((enemy) => {
+        if (isCollideWithEnemy(spaceShip, enemy)) {
+            if (spaceShip.life > 0) {
+                spaceShip.life--;
+            }
+        }
         enemy.updatePosition(frameCount);
         enemy.draw();
     });
 
+    // redrawing enemies after killing one set of enemies
     if (enemies.length === 0) {
+        showText = true;
         if (currentLevel.isBossLevel()) {
             levelManager.goToNextLevel();
             currentLevel = levelManager.getCurrentLevel();
             currentWaveIndex = 0;
             enemies = currentLevel.generateEnemies();
-            showText = true;
             frameCount = 0;
         } else {
             currentLevel.goToNextWave();
             currentWaveIndex++;
             enemies = currentLevel.generateEnemies();
-            showText = true;
             frameCount = 0;
         }
     }
 
+    // enemy bullets
     if (frameCount % 100 === 0 && enemies.length > 0) {
         const randEnemyBullet = generateRandomNumber(0, enemies.length - 1);
         enemyBullets.push(
@@ -243,16 +263,24 @@ function drawFrames() {
         b.shoot();
     });
 
+    // if player life over
     if (spaceShip.life <= 0) {
-        gameOver();
+        if (currentScore > highScore) {
+            highScore = currentScore;
+            localStorage.setItem("highscore", "" + highScore);
+        }
         gunshotAudio.pause();
         gunshotAudio.currentTime = 0;
         background.pause();
         stopBulletInterval();
         gameOverFlag = true;
+
+        gameOver();
+
         return;
     }
 
+    // enemy bullets and player ship collision
     enemyBullets.forEach((bullet, i) => {
         if (isCollide(bullet, spaceShip)) {
             if (spaceShip.life > 0) {

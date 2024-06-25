@@ -6,7 +6,7 @@ import Enemy from "../characters/enemy";
 export function waveGenerator(image: string, rows: number, cols: number, life: number, powers: number, movementTypes: string[]) {
     const enemies: Enemy[] = [];
     const startX = generateRandomNumber(0, DIMENSIONS.CANVAS__WIDHT - 60 * cols);
-    const startY = generateRandomNumber(-300, 0);
+    const startY = generateRandomNumber(0, 1);
     const movementType = movementTypes[generateRandomNumber(0, movementTypes.length - 1)];
     for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {

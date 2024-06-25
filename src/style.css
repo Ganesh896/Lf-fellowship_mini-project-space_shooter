@@ -4,19 +4,23 @@
     box-sizing: border-box;
 }
 
+html {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
 body {
+    font-family: "Pixelify Sans", sans-serif;
     position: relative;
     width: 100%;
     height: 100vh;
-    font-family: "Pixelify Sans", sans-serif;
-}
-
-html {
-    overflow: hidden;
 }
 
 #galaxy {
     display: none;
+    width: 100%;
+    height: 100vh;
 }
 
 #canvas {
@@ -38,7 +42,7 @@ html {
 }
 
 .start__window h1 {
-    font-size: 72px;
+    font-size: clamp(40px, 8vw, 72px);
     background: -webkit-linear-gradient(#314755, #26a0da, #e684ae);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -49,23 +53,21 @@ img {
     max-width: 150px;
 }
 
-.start__button,
-.restart__button {
+button {
+    font-family: "Pixelify Sans", sans-serif;
+    font-size: clamp(20px, 6vw, 30px);
     outline: none;
     border: none;
     padding: 16px 24px;
-    font-size: clamp(20px, 6vw, 30px);
-    font-family: "Pixelify Sans", sans-serif;
     border-radius: 5px;
     background: rgb(2, 0, 36);
     background: linear-gradient(90deg, rgba(2, 0, 36, 1) 0%, rgba(9, 9, 121, 1) 35%, rgba(0, 212, 255, 1) 100%);
     color: #fff;
     cursor: pointer;
-    margin-top: 16px;
 }
 
-.restart__button {
-    display: none;
+.start__button {
+    margin-top: 16px;
 }
 
 .spaceship {
@@ -91,4 +93,12 @@ img {
     top: 50%;
     transform: translateY(-50%);
     right: -20px;
+}
+
+.restart__button {
+    position: absolute;
+    top: 70%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
 }

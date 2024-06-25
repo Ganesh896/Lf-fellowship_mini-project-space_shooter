@@ -1,7 +1,7 @@
 import SpaceShip from "./characters/player";
 import { DIMENSIONS, bulletImages, spaceShipImages } from "./constants/constants";
 import { SHIP__WIDTH, SHIP__HEIGHT } from "./constants/constants";
-import { canvas, ctx, startButton, startWindow, video } from "./html/html-elements";
+import { canvas, ctx, restartButton, startButton, startWindow, video } from "./html/html-elements";
 import { playerMovement } from "./components/player-movement";
 import { initialIndex, isCollide, isCollideWithEnemy } from "./helper";
 import Particle from "./characters/explosion";
@@ -91,6 +91,43 @@ function stopBulletInterval() {
 }
 
 let frameCount = 0;
+
+// Restart game function
+function restartGame() {
+    cancelAnimationFrame(animationFrameId);
+    stopBulletInterval();
+    background.pause();
+
+    // Reset game variables
+    gameOverFlag = false;
+    isPaused = false;
+    currentScore = 0;
+    bulletPowerCount = 0;
+    rocketPowerCount = 0;
+    frameCount = 0;
+    particles.length = 0;
+    powers.length = 0;
+    bullets.length = 0;
+    enemyBullets.length = 0;
+    spaceShip.life = 5;
+    background.currentTime = 0;
+    showText = true;
+
+    // Reset levels and enemies
+    const levelManager = new LevelManager();
+    levelManager.reset();
+    currentLevel = levelManager.getCurrentLevel();
+    enemies = currentLevel.generateEnemies(); // Generate enemies from the first wave
+
+    // Hide the restart button
+    restartButton.style.display = "none";
+
+    // Reinitialize game objects and start game loop
+    initializeGameObjects();
+    startBulletInterval();
+    drawFrames();
+}
+
 // animation function
 function drawFrames() {
     frameCount++;
@@ -111,7 +148,7 @@ function drawFrames() {
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // particle explosion on klling enemy
+    // particle explosion on killing enemy
     particles.forEach((particle, index) => {
         if (particle.opacity <= 0) {
             particles.splice(index, 1);
@@ -209,7 +246,7 @@ function drawFrames() {
         }
     }
 
-    // removing enemies if lifes over
+    // removing enemies if life is over
     for (let j = 0; j < enemies.length; j++) {
         if (enemies[j].life <= 0) {
             enemies.splice(j, 1);
@@ -263,7 +300,7 @@ function drawFrames() {
         b.shoot();
     });
 
-    // if player life over
+    // if player life is over
     if (spaceShip.life <= 0) {
         if (currentScore > highScore) {
             highScore = currentScore;
@@ -274,7 +311,7 @@ function drawFrames() {
         background.pause();
         stopBulletInterval();
         gameOverFlag = true;
-
+        restartButton.style.display = "block";
         gameOver();
 
         return;
@@ -332,6 +369,11 @@ startButton!.addEventListener("click", () => {
     } else {
         togglePause();
     }
+});
+
+//restart the game
+restartButton!.addEventListener("click", () => {
+    restartGame();
 });
 
 video.addEventListener("canplay", () => {

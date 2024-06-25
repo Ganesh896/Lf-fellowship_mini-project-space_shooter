@@ -29,4 +29,8 @@ export class Level {
     isBossLevel(): boolean {
         return this.currentWave >= this.waves.length;
     }
+
+    reset() {
+        this.currentWave = 0;
+    }
 }

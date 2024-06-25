@@ -17,6 +17,10 @@ body {
     height: 100vh;
 }
 
+h1 {
+    text-align: center;
+}
+
 .leaderboard {
     width: 15%;
     background-color: #2d2d2d;
@@ -97,6 +101,7 @@ input {
     top: 0;
     left: 0;
     z-index: 1000;
+    padding: 0 16px;
 }
 
 .start__window h1 {
@@ -159,4 +164,10 @@ button {
     left: 57%;
     transform: translate(-50%, -50%);
     display: none;
+}
+
+@media screen and (max-width: 991px) {
+    .leaderboard {
+        display: none;
+    }
 }

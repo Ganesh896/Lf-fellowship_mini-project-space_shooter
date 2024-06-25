@@ -45,7 +45,7 @@ function initializeGameObjects() {
 
 // gunshoot audio
 const gunshotAudio = new Audio("/audio/gun-shoot.wav");
-gunshotAudio.volume = 0;
+gunshotAudio.volume = 0.3;
 
 // Enemy and level management
 const levelManager = new LevelManager();
@@ -60,7 +60,7 @@ export const enemyBullets: EnemyBullet[] = [];
 const background = new Audio();
 background.src = "/audio/background.mp3";
 background.loop = true;
-background.volume = 0;
+background.volume = 0.2;
 background.currentTime = 0;
 
 // Display text variables
@@ -382,7 +382,7 @@ startButton!.addEventListener("click", () => {
     }
 });
 
-//restart the game
+// Restart the game
 restartButton!.addEventListener("click", () => {
     restartGame();
 });
@@ -392,3 +392,47 @@ video.addEventListener("canplay", () => {
         background.play();
     }
 });
+
+// Touch event listeners for the spaceship
+let isDragging = false;
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener("touchstart", handleTouchStart);
+canvas.addEventListener("touchmove", handleTouchMove);
+canvas.addEventListener("touchend", handleTouchEnd);
+
+function handleTouchStart(event: TouchEvent) {
+    const touch = event.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    touchStartX = touch.clientX - rect.left;
+    touchStartY = touch.clientY - rect.top;
+
+    // Check if the touch is within the spaceship's area
+    if (touchStartX > spaceShip.xpose && touchStartX < spaceShip.xpose + spaceShip.width && touchStartY > spaceShip.ypose && touchStartY < spaceShip.ypose + spaceShip.height) {
+        isDragging = true;
+    }
+}
+
+function handleTouchMove(event: TouchEvent) {
+    if (isDragging) {
+        const touch = event.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const touchX = touch.clientX - rect.left;
+        const touchY = touch.clientY - rect.top;
+
+        // Update spaceship position based on touch movement
+        spaceShip.xpose = touchX - spaceShip.width / 2;
+        spaceShip.ypose = touchY - spaceShip.height / 2;
+
+        // Ensure the spaceship stays within the canvas boundaries
+        if (spaceShip.xpose < 0) spaceShip.xpose = 0;
+        if (spaceShip.xpose + spaceShip.width > canvas.width) spaceShip.xpose = canvas.width - spaceShip.width;
+        if (spaceShip.ypose < 0) spaceShip.ypose = 0;
+        if (spaceShip.ypose + spaceShip.height > canvas.height) spaceShip.ypose = canvas.height - spaceShip.height;
+    }
+}
+
+function handleTouchEnd() {
+    isDragging = false;
+}

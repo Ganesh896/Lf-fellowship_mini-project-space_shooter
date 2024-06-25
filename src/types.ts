@@ -14,3 +14,8 @@ export enum POWER__TYPE {
     ADDROCKET = "addRocket",
     ADDHEALTH = "addHealth",
 }
+
+export interface Scorer {
+    name: string;
+    score: number;
+}

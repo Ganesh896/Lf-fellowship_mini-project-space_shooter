@@ -10,3 +10,6 @@ export const restartButton = document.querySelector(".restart__button") as HTMLB
 export const nextButton = document.getElementById("next__ship") as HTMLButtonElement;
 export const prevButton = document.getElementById("previous__ship") as HTMLButtonElement;
 export const spaceShipImageElement = document.getElementById("spaceship") as HTMLImageElement;
+
+export const topScorerList = document.querySelector(".topscorer") as HTMLUListElement;
+

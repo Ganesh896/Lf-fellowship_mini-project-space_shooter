@@ -7,7 +7,6 @@
         <title>Space Shooter</title>
 
         <!-- google font -->
-
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet" />
@@ -22,8 +21,19 @@
         <link rel="stylesheet" href="./src/style.css" />
     </head>
     <body>
-        <canvas id="canvas"></canvas>
-        <video id="galaxy" src="./public/images/background-full.mp4" loop autoplay muted></video>
+        <div class="game__window">
+            <div class="leaderboard">
+                <h1>Leadboard</h1>
+
+                <ul class="topscorer"></ul>
+            </div>
+            <div class="game__window--content">
+                <canvas id="canvas"></canvas>
+                <video id="galaxy" src="./public/images/background-full.mp4" loop autoplay muted></video>
+            </div>
+
+            <button id="restartButton" class="restart__button">Restart</button>
+        </div>
 
         <div class="start__window">
             <h1>Space Shooter</h1>
@@ -36,10 +46,14 @@
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
             </div>
+            <input type="text" placeholder="Enter Your Name" id="player__name" />
             <button id="startButton" class="start__button">Start</button>
+            <div class="instructions">
+                <h2>Instructions</h2>
+                <p>Use arrow keys to move</p>
+                <p>Press space to Pause/Resume</p>
+            </div>
         </div>
-
-        <button id="restartButton" class="restart__button">Restart</button>
 
         <script type="module" src="/src/main.ts"></script>
     </body>

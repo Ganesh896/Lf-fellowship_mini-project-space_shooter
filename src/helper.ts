@@ -2,7 +2,8 @@ import Enemy from "./characters/enemy";
 import SpaceShip from "./characters/player";
 import Power from "./components/powerup";
 import { spaceShipImages } from "./constants/constants";
-import { nextButton, prevButton, spaceShipImageElement } from "./html/html-elements";
+import { nextButton, prevButton, spaceShipImageElement, topScorerList } from "./html/html-elements";
+import { Scorer } from "./types";
 import Bullet from "./weapons/bullet";
 import EnemyBullet from "./weapons/enemy-bullet";
 
@@ -43,3 +44,39 @@ prevButton?.addEventListener("click", function () {
     initialIndex = initialIndex < 0 ? 1 : initialIndex;
     spaceShipImageElement.src = spaceShipImages[initialIndex][0];
 });
+
+// export const topScorer = [
+//     {
+//         name: "Ganesh",
+//         score: 134,
+//     },
+//     {
+//         name: "Himal",
+//         score: 200,
+//     },
+//     {
+//         name: "Harry",
+//         score: 56,
+//     },
+// ];
+
+export function showTopScorer() {
+    const topScorer: Scorer[] = JSON.parse(localStorage.getItem("topScorer") || "[]");
+    topScorer.sort((a, b) => b.score - a.score);
+
+    if (topScorer.length > 10) {
+        topScorer.pop();
+    }
+
+    topScorerList.innerHTML = "";
+    for (let i = 0; i < topScorer.length; i++) {
+        const scorer = `<li>${i + 1}. ${topScorer[i].name} - ${topScorer[i].score}</li>`;
+        topScorerList?.insertAdjacentHTML("beforeend", scorer);
+    }
+    console.log(topScorer);
+}
+
+export function getPlayerName() {
+    const playerNameInput = document.getElementById("player__name") as HTMLInputElement;
+    return playerNameInput.value;
+}

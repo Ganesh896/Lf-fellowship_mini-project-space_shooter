@@ -3,7 +3,7 @@ import { DIMENSIONS, bulletImages, spaceShipImages } from "./constants/constants
 import { SHIP__WIDTH, SHIP__HEIGHT } from "./constants/constants";
 import { canvas, ctx, restartButton, startButton, startWindow, video } from "./html/html-elements";
 import { playerMovement } from "./components/player-movement";
-import { initialIndex, isCollide, isCollideWithEnemy } from "./helper";
+import { getPlayerName, initialIndex, isCollide, isCollideWithEnemy, showTopScorer } from "./helper";
 import Particle from "./characters/explosion";
 import generateRandomNumber from "./utils/random";
 import EnemyBullet from "./weapons/enemy-bullet";
@@ -45,7 +45,7 @@ function initializeGameObjects() {
 
 // gunshoot audio
 const gunshotAudio = new Audio("/audio/gun-shoot.wav");
-gunshotAudio.volume = 0.3;
+gunshotAudio.volume = 0;
 
 // Enemy and level management
 const levelManager = new LevelManager();
@@ -60,7 +60,7 @@ export const enemyBullets: EnemyBullet[] = [];
 const background = new Audio();
 background.src = "/audio/background.mp3";
 background.loop = true;
-background.volume = 0.2;
+background.volume = 0;
 background.currentTime = 0;
 
 // Display text variables
@@ -302,6 +302,10 @@ function drawFrames() {
 
     // if player life is over
     if (spaceShip.life <= 0) {
+        const oldList = JSON.parse(localStorage.getItem("topScorer") || "[]");
+        const playerName = getPlayerName();
+        oldList.push({ name: playerName, score: currentScore });
+        localStorage.setItem("topScorer", JSON.stringify(oldList));
         if (currentScore > highScore) {
             highScore = currentScore;
             localStorage.setItem("highscore", "" + highScore);
@@ -327,6 +331,8 @@ function drawFrames() {
         }
     });
 
+    showTopScorer();
+
     drawCurrentScore();
 
     animationFrameId = requestAnimationFrame(drawFrames);
@@ -349,25 +355,30 @@ function togglePause() {
 
 // Event listeners for play/pause
 window.addEventListener("keypress", function (e) {
-    if (e.key === " ") {
+    if (e.key === " " && gameInitialized) {
         togglePause();
     }
 });
 
 // Event listener for the start button to start the game
 startButton!.addEventListener("click", () => {
-    canvas!.style.display = "block";
-    startWindow!.style.display = "none";
-    video.style.display = "block";
+    const playerName = getPlayerName();
+    if (playerName.length > 0) {
+        canvas!.style.display = "block";
+        startWindow!.style.display = "none";
+        video.style.display = "block";
 
-    if (!gameInitialized) {
-        initializeGameObjects();
-        enemies = currentLevel.generateEnemies();
-        startBulletInterval();
-        drawFrames();
-        gameInitialized = true;
+        if (!gameInitialized) {
+            initializeGameObjects();
+            enemies = currentLevel.generateEnemies();
+            startBulletInterval();
+            drawFrames();
+            gameInitialized = true;
+        } else {
+            togglePause();
+        }
     } else {
-        togglePause();
+        alert("Player name should not be empty");
     }
 });
 

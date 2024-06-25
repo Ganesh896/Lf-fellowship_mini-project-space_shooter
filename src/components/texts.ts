@@ -24,13 +24,6 @@ export function gameOver() {
         highScoreTextWidth = ctx.measureText(highScoreText).width;
 
     ctx.fillText(highScoreText, canvas.width / 2 - highScoreTextWidth / 2, canvas.height / 2 + 80);
-
-    ctx.font = "20px Pixelify Sans";
-    ctx.fillStyle = "#000";
-    const restartText = "Press Enter to Restart the game",
-        restartTextWidth = ctx.measureText(highScoreText).width;
-
-    ctx.fillText(restartText, canvas.width / 2 - restartTextWidth / 2, canvas.height / 2 + 120);
 }
 
 export function drawCurrentScore() {

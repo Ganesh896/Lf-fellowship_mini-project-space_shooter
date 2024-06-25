@@ -304,12 +304,29 @@ function drawFrames() {
     if (spaceShip.life <= 0) {
         const oldList = JSON.parse(localStorage.getItem("topScorer") || "[]");
         const playerName = getPlayerName();
-        oldList.push({ name: playerName, score: currentScore });
+        let isSamePlayer = false;
+
+        for (let i = 0; i < oldList.length; i++) {
+            if (oldList[i].name === playerName) {
+                isSamePlayer = true;
+                if (oldList[i].score < currentScore) {
+                    oldList[i].score = currentScore;
+                }
+                break; // Exit loop once the player is found and score is updated
+            }
+        }
+
+        if (!isSamePlayer) {
+            oldList.push({ name: playerName, score: currentScore });
+        }
+
         localStorage.setItem("topScorer", JSON.stringify(oldList));
+
         if (currentScore > highScore) {
             highScore = currentScore;
             localStorage.setItem("highscore", "" + highScore);
         }
+
         gunshotAudio.pause();
         gunshotAudio.currentTime = 0;
         background.pause();
